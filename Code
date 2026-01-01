@@ -1,0 +1,131 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- SETTINGS
+local TARGET_PART = "Head"
+local MAX_DISTANCE = 1000
+
+-- STATES
+local aimbotEnabled = true
+local guiOpen = true
+
+-- GUI CREATION
+local gui = Instance.new("ScreenGui")
+gui.Name = "AimbotGUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 150)
+frame.Position = UDim2.new(0, 20, 0.5, -75)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.Parent = gui
+frame.Active = true
+frame.Draggable = true
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Text = "HARD AIMBOT"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = frame
+
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0.9, 0, 0, 40)
+toggle.Position = UDim2.new(0.05, 0, 0.4, 0)
+toggle.Text = "AIMBOT: ON"
+toggle.Font = Enum.Font.GothamBold
+toggle.TextSize = 16
+toggle.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.Parent = frame
+
+local toggleCorner = Instance.new("UICorner", toggle)
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0.9, 0, 0, 30)
+close.Position = UDim2.new(0.05, 0, 0.75, 0)
+close.Text = "CLOSE GUI"
+close.Font = Enum.Font.Gotham
+close.TextSize = 14
+close.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+close.TextColor3 = Color3.new(1,1,1)
+close.Parent = frame
+
+local closeCorner = Instance.new("UICorner", close)
+
+-- GUI LOGIC
+toggle.MouseButton1Click:Connect(function()
+	aimbotEnabled = not aimbotEnabled
+	toggle.Text = "AIMBOT: " .. (aimbotEnabled and "ON" or "OFF")
+	toggle.BackgroundColor3 = aimbotEnabled
+		and Color3.fromRGB(180, 60, 60)
+		or Color3.fromRGB(60, 60, 60)
+end)
+
+close.MouseButton1Click:Connect(function()
+	frame.Visible = false
+	guiOpen = false
+end)
+
+-- REOPEN BUTTON
+local openButton = Instance.new("TextButton")
+openButton.Size = UDim2.new(0, 120, 0, 35)
+openButton.Position = UDim2.new(0, 20, 1, -60)
+openButton.Text = "OPEN AIMBOT"
+openButton.Font = Enum.Font.GothamBold
+openButton.TextSize = 14
+openButton.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+openButton.TextColor3 = Color3.new(1,1,1)
+openButton.Parent = gui
+
+local openCorner = Instance.new("UICorner", openButton)
+
+openButton.MouseButton1Click:Connect(function()
+	frame.Visible = true
+end)
+
+-- AIMBOT LOGIC
+local function getTarget()
+	local closest, shortest = nil, math.huge
+	local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer
+			and player.Character
+			and player.Character:FindFirstChild(TARGET_PART)
+			and player.Character:FindFirstChild("Humanoid")
+			and player.Character.Humanoid.Health > 0 then
+
+			local part = player.Character[TARGET_PART]
+			local pos, visible = Camera:WorldToViewportPoint(part.Position)
+
+			if visible then
+				local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+				if dist < shortest and dist < MAX_DISTANCE then
+					shortest = dist
+					closest = part
+				end
+			end
+		end
+	end
+	return closest
+end
+
+RunService.RenderStepped:Connect(function()
+	if not LocalPlayer:FindFirstChild("HasAimbot") then return end
+	if not LocalPlayer.HasAimbot.Value then return end
+	if not aimbotEnabled then return end
+
+	local target = getTarget()
+	if target then
+		Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+	end
+end)
